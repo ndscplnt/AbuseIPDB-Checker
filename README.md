@@ -13,20 +13,20 @@ To use this tool, you will need to have the official API KEY from https://www.ab
 Install AbuseIPDB Checker with git
 
 ```bash
-  git clone https://github.com/ndscplnt/AbuseIPDB-Checker.git
-  cd AbuseIPDB-Checker
+ git clone https://github.com/ndscplnt/AbuseIPDB-Checker.git
+ cd AbuseIPDB-Checker
 ```
 
 You have to install the requirements before use this tool
 
 ```bash
-pip install -r requirements.txt
+ pip install -r requirements.txt
 ```
 
 Run the tool with command:
 
 ```bash
-python abuseipdb.py
+ python abuseipdb.py
 ```
 ## Usage/Examples
 
