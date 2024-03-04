@@ -53,7 +53,7 @@ def print_help():
 
     Examples:
 
-    python abuseipdb.py -ip -d 1.2.3.4
+    python abuseipdb.py -ip 1.2.3.4 -d
     python abuseipdb.py -subnet 1.2.3.4/24 
     python abuseipdb.py -file /path/to/file.txt
     python abuseipdb.py -config
@@ -98,17 +98,16 @@ def check_ip(ip,details):
         table.add_column("Lastest Report", justify="left")
 
         console = Console()
-
         config.read(config_file)
         settings_confidenceScore = config['DEFAULT']['confidenceScore']
         settings_showDetails = config['DEFAULT']['showDetails']
         if args.ip:
-            if details == True or settings_showDetails == "yes" or settings_showDetails == "Yes" or settings_showDetails == "y" or settings_showDetails == "Y":
+            if details == True or settings_showDetails == "yes" or settings_showDetails == "Yes" or settings_showDetails == "y" or settings_showDetails == "Y" or args.details == True:
                 if data['data']['abuseConfidenceScore'] >= int(settings_confidenceScore):
                     table.add_row(ip, str(r_Score), r_Domain, str(r_Reports_Count), r_Country_Code, r_Lastest_Report)
                     console.print(table)
-                else:
-                    print(f"\nIP address [bold yellow]{ip}[/bold yellow] has not been reported as malicious with a confidence score of [[bold yellow]{data['data']['abuseConfidenceScore']}[/bold yellow]].\n")
+                else: 
+                    print(f"\nIP address [bold yellow]{ip}[/bold yellow] assigned to domain [bold yellow]{r_Domain}[/bold yellow] has not been reported as malicious with a confidence score of [[bold yellow]{data['data']['abuseConfidenceScore']}[/bold yellow]].\n")
             else:
                 if data['data']['abuseConfidenceScore'] >= int(settings_confidenceScore):
                     print(f"\nIP address [bold yellow]{ip}[/bold yellow] has been reported as malicious with a confidence score of [[bold red]{data['data']['abuseConfidenceScore']}[/bold red]].\n")
@@ -118,10 +117,10 @@ def check_ip(ip,details):
     else:
         print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [yellow]{response["error"]["detail"]}[/yellow]\n')
 
-
+#optional details
 def check_ips_from_file(filename, output_file, details):
     console = Console()
-    table = Table(title="List of Checked IP from [yellow]{filename}[/yellow]")
+    table = Table(title=f"List of Checked IP from [yellow]{filename}[/yellow]")
     table.add_column("IP Address", justify="left")
     table.add_column("Score", justify="center")
     table.add_column("Domain", justify="left")
@@ -331,7 +330,7 @@ def main():
     elif args.subnet:
         check_subnet(args.subnet, args.output_file)
     elif args.ips_file:
-        check_ips_from_file(args.ips_file, args.output_file)
+        check_ips_from_file(args.ips_file, args.output_file, args.details)
     elif args.config:
         config_menu()
     else:
