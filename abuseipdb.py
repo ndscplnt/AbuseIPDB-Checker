@@ -130,24 +130,27 @@ def check_ips_from_file(filename, output_file, details):
     config.read(config_file)
     settings_confidenceScore = config['DEFAULT']['confidenceScore']
     malicious_ips = []
+    try:
+        with open(filename, 'r') as f:
+            ips = f.readlines()
+            progress = Progress(transient=True)
+            task = progress.add_task(f"\nProcessing IPs from [yellow]{filename}[/yellow]", total=len(ips))
+            with progress:
+                for ip in ips:
+                    ip = ip.strip()
+                    result = check_ip(ip, details)
+                    
+                    progress.update(task, advance=1)
+                    if result:
+                        table.add_row(*result)
+                    if int(result[1]) >= int(settings_confidenceScore):
+                        result = (*result, f"https://abuseipdb.com/check/{ip}")
+                        malicious_ips.append(result)
+                progress.stop()
+            console.print(table)
+    except FileNotFoundError:
+        print(f"\nFile [yellow]{filename}[/yellow] not found.\n")
     
-    with open(filename, 'r') as f:
-        ips = f.readlines()
-        progress = Progress(transient=True)
-        task = progress.add_task("\nProcessing IPs from [yellow]{filename}[/yellow]", total=len(ips))
-        with progress:
-            for ip in ips:
-                ip = ip.strip()
-                result = check_ip(ip, details)
-                
-                progress.update(task, advance=1)
-                if result:
-                    table.add_row(*result)
-                if int(result[1]) >= int(settings_confidenceScore):
-                    result = (*result, f"https://abuseipdb.com/check/{ip}")
-                    malicious_ips.append(result)
-            progress.stop()
-    console.print(table)
     if output_file:
         if output_file.endswith(".csv"):
             with open(output_file, mode='w', newline='') as file:
@@ -155,16 +158,18 @@ def check_ips_from_file(filename, output_file, details):
                 writer.writerow(["IP", "Score","Domain","Reports","Country","Lastest Report","Link to AbuseIPDB"])
                 for row in malicious_ips:
                     writer.writerow(row)
-            print("\nList of malicious IPs with score greater than or equal to [bold yellow]{settings_confidenceScore}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
-        elif output_file.endswith(".xlsx") or output_file.endswith(".xls"):
-                try:
-                    df = pd.DataFrame(malicious_ips, columns=["IP", "Score","Domain","Reports","Country","Lastest Report","Link to AbuseIPDB"])
-                    df.to_excel(output_file, index=False)
-                except FutureWarning: 
-                    print("Use xlsx for better results.")
-                    pass
-                    
-                print("\nList of malicious IPs with score greater than or equal to [bold yellow]{settings_confidenceScore}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
+            print(f"\nList of malicious IPs with score greater than or equal to [bold red]{settings_confidenceScore}[/bold red] has been written to [yellow]{output_file}[/yellow].\n")
+            print(f"\nYou can modify the confidence score in the config file [yellow]{config_file}[/yellow] or with command [yellow]-config.[/yellow]\n")
+        elif output_file.endswith(".xlsx") or output_file.endswith(".xls") or output_file.endswith(""):
+            if output_file.endswith(""):
+                output_file = f"{output_file}.xlsx"
+            try:
+                df = pd.DataFrame(malicious_ips, columns=["IP", "Score","Domain","Reports","Country","Lastest Report","Link to AbuseIPDB"])
+                df.to_excel(output_file, index=False)
+            except FutureWarning: 
+                print("Use xlsx for better results.")
+                pass
+            print(f"\nList of malicious IPs with score greater than or equal to [bold yellow]{settings_confidenceScore}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
     else:
         print("\nNo output file specified.\n")
 
