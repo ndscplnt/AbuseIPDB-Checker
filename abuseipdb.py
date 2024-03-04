@@ -101,6 +101,7 @@ def check_ip(ip,details):
 
         config.read(config_file)
         settings_confidenceScore = config['DEFAULT']['confidenceScore']
+        settings_showDetails = config['DEFAULT']['showDetails']
         if args.ip:
             if details == True or settings_showDetails == "yes" or settings_showDetails == "Yes" or settings_showDetails == "y" or settings_showDetails == "Y":
                 if data['data']['abuseConfidenceScore'] >= int(settings_confidenceScore):
