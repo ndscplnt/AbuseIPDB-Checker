@@ -59,14 +59,12 @@ def print_help():
     python abuseipdb.py -config
     \n""")
 
-API_KEY=""
-settings_confidenceScore=""
-settings_showDetails=""
+
+
 config_file = 'config.ini'
 config = configparser.ConfigParser()
-config['DEFAULT']['confidenceScore'] = settings_confidenceScore
-config['DEFAULT']['API_KEY'] = API_KEY
-config['DEFAULT']['showDetails'] = settings_showDetails
+
+
 
 # CHECK
 
@@ -243,8 +241,8 @@ config = configparser.ConfigParser()
 def config_menu():
     try:
         if not os.path.exists(config_file):
+            print("Config file not found. Creating a new one.")
             config['DEFAULT'] = {
-                'API_KEY': '',
                 'confidenceScore': '50',
                 'showDetails': 'False'
             }
@@ -297,7 +295,7 @@ def setup_api():
         API_KEY = input("Enter your API key here: ")
         config['DEFAULT']['API_KEY'] = API_KEY
         with open(config_file, 'w') as f:
-            config.write(f)
+            config.write(f)   
         print("Saved.")
         time.sleep(1)
         os.system('cls')
@@ -316,12 +314,6 @@ def main():
         }
         with open(config_file, 'w') as f:
             config.write(f)
-    #Check if showDetails not in config file, if not add it
-    if not config.has_option('DEFAULT', 'showDetails'):
-        config['DEFAULT']['showDetails'] = 'False'
-        with open(config_file, 'w') as f:
-            config.write(f)    
-
  
     
     
@@ -329,6 +321,7 @@ def main():
     config.read(config_file)
 
     if not config.has_option('DEFAULT', 'API_KEY'):
+        print("API Key is empty. Please enter your API key.")
         setup_api()
     elif args.help:
         print_help()
