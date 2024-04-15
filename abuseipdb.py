@@ -115,7 +115,10 @@ def check_ip(ip,details):
                     print(f"\nIP address [bold yellow]{ip}[/bold yellow] has not been reported as malicious with a confidence score of [[bold yellow]{data['data']['abuseConfidenceScore']}[/bold yellow]].\n")              
         return (ip, str(r_Score), r_Domain, str(r_Reports_Count), r_Country_Code, r_Lastest_Report)
     else:
-        print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [yellow]{response["error"]["detail"]}[/yellow]\n')
+        errors = response.json().get('errors', [])
+        error_detail = errors[0].get('detail', 'Errore sconosciuto')
+        print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [red]{error_detail}[/red]\n')
+
 
 #optional details
 def check_ips_from_file(filename, output_file, details):
@@ -209,7 +212,9 @@ def check_subnet(subnet, output_file):
 
         print(f'This subnet [bold yellow]{subnet}[/bold yellow] has a reputation score average of [bold yellow]{avg_r_Score}[/bold yellow]\n')
     else:   
-        print(f'Error checking subnet [bold yellow]{subnet}[/bold yellow]: [yellow]{response["error"]["detail"]}[/yellow]\n')
+        errors = response.json().get('errors', [])
+        error_detail = errors[0].get('detail', 'Errore sconosciuto')
+        print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [red]{error_detail}[/red]\n')
     if output_file:
         output_list = []
         for record in data['data']['reportedAddress']:
