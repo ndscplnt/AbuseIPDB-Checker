@@ -41,7 +41,7 @@ python abuseipdb.py -file path/to/file.txt -o output.xlsx
 
 ## Thanks to
 - [AbuseIPDB](https://www.abuseipdb.com)
-- [Requests](https://github.com/psf/requests)
+- [Termcolor](https://github.com/termcolor/termcolor)
 - [Rich](https://github.com/Textualize/rich)
 - [Pandas](https://github.com/pandas-dev/pandas)
 
