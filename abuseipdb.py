@@ -1,4 +1,5 @@
 import os
+import subprocess
 import requests
 import time
 import argparse
@@ -9,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress
 from rich import print
+import gui as abgui
 
 
 def banner():
@@ -21,17 +23,6 @@ def banner():
     console.print("[red]  / ____ \| |_) | |_| \__ \  __/_| |_| |    | |__| | |_) | | |____| | | |  __/ (__|   \  __/ |         [/red]")
     console.print("[red] /_/    \_\_.__/ \__,_|___/\___|_____|_|    |_____/|____/   \_____|_| |_|\___|\___|_|\_\___|_|         [/red]")
     console.print("\n")
-
-parser = argparse.ArgumentParser(description=banner(), add_help=False)
-parser.add_argument('-help', dest='help',action="store_true", help='Print this help message')
-parser.add_argument('-ip', dest='ip', metavar='IP', help='Check an individual IP address.')
-parser.add_argument('-file', dest='ips_file', metavar='FILE', help='Check a list of IP addresses from a file (one per line)"')
-parser.add_argument('-subnet', dest='subnet', metavar='SUBNET', help='Subnet Check')
-parser.add_argument('-output', dest='output_file', metavar='FILE', help='Write list of malicious IPs with score greater than or equal to Confidence Score')
-parser.add_argument('-details', dest='details', action="store_true", help='Print details of IP check. (Score, Domain, Reports, Country, Lastest Report)')
-parser.add_argument('-config', dest='config', action="store_true", help='Open config menu. (edit API_KEY or Confidence Score)')
-args = parser.parse_args()
-
 
 def print_help():
     print("""
@@ -60,16 +51,11 @@ def print_help():
     \n""")
 
 
-
 config_file = 'config.ini'
 config = configparser.ConfigParser()
 
-
-
-# CHECK
-
-
-def check_ip(ip,details):
+#Check IPs
+def check_ip(ip,details, gui):
     config.read(config_file)
     API_KEY = config['DEFAULT']['API_KEY']
 
@@ -78,50 +64,99 @@ def check_ip(ip,details):
         "Accept": "application/json",
         "Key": API_KEY
     }
-    table = Table(title="List of Checked IP")
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
-        r_Score = data['data']['abuseConfidenceScore']
+        r_Score = str(data['data']['abuseConfidenceScore'])
         r_Domain = data['data']['domain']
-        r_Reports_Count = data['data']['totalReports']
+        r_Reports_Count = str(data['data']['totalReports'])
         r_Country_Code = data['data']['countryCode']
         r_Lastest_Report = data['data']['lastReportedAt']
         
         
-        table = Table(title="List of Checked IP")
+        table = Table(title="List of Checked IP",caption= f"Default confidence score:  [yellow]{config['DEFAULT']['confidenceScore']}[yellow]")
         table.add_column("IP Address", justify="left")
         table.add_column("Score", justify="center")
         table.add_column("Domain", justify="left")
         table.add_column("Reports", justify="center")
         table.add_column("Country", justify="center")
         table.add_column("Lastest Report", justify="left")
-
+        print("gui", gui)
         console = Console()
         config.read(config_file)
-        settings_confidenceScore = config['DEFAULT']['confidenceScore']
-        settings_showDetails = config['DEFAULT']['showDetails']
-        if args.ip:
-            if details == True or settings_showDetails == "yes" or settings_showDetails == "Yes" or settings_showDetails == "y" or settings_showDetails == "Y" or args.details == True:
-                if data['data']['abuseConfidenceScore'] >= int(settings_confidenceScore):
-                    table.add_row(ip, str(r_Score), r_Domain, str(r_Reports_Count), r_Country_Code, r_Lastest_Report)
-                    console.print(table)
-                else: 
-                    print(f"\nIP address [bold yellow]{ip}[/bold yellow] assigned to domain [bold yellow]{r_Domain}[/bold yellow] has not been reported as malicious with a confidence score of [[bold yellow]{data['data']['abuseConfidenceScore']}[/bold yellow]].\n")
-            else:
-                if data['data']['abuseConfidenceScore'] >= int(settings_confidenceScore):
-                    print(f"\nIP address [bold yellow]{ip}[/bold yellow] has been reported as malicious with a confidence score of [[bold red]{data['data']['abuseConfidenceScore']}[/bold red]].\n")
+        settings_confidenceScore = int(config['DEFAULT']['confidenceScore'])
+        settings_showDetails = bool(config['DEFAULT']['showDetails'])
+        if __name__ == '__main__':
+            if args.ip:
+                if details == True or settings_showDetails in ["yes", "y", "YES", "Y", "true", "True"]:
+                    if int(r_Score) >= settings_confidenceScore and int(r_Score) >= 1:
+                        table.add_row(ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report)
+                        console.print(table)
+                        print("")
+                    else: 
+                        table.add_row(ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report)
+                        table.caption = f"IP address [bold green]{ip}[/bold green] has not been reported as malicious!\n"
+                        console.print(table)
+                        print("")
+                elif details == False or settings_showDetails in ["no", "n", "NO", "N", "false", "False"]:
+                    if int(r_Score) >= settings_confidenceScore:
+                        print(f"\nIP address [bold red]{ip}[/bold red] assigned to domain [bold red]{r_Domain}[/bold red] has been reported as malicious with a confidence score of [[bold red]{data['data']['abuseConfidenceScore']}[/bold red]].\n")
+                    else:
+                        print(f"\nIP address [bold green]{ip}[/bold green] assigned to domain [bold green]{r_Domain}[/bold green] has not been reported as malicious with a confidence score of [[bold green]{data['data']['abuseConfidenceScore']}[/bold green]].\n")                            
+        else:
+            if details == True or settings_showDetails in ["yes", "y", "YES", "Y", "true", "True"]:
+                if int(r_Score) >= settings_confidenceScore and int(r_Score) >= 1:
+                    if gui == True:
+                            results = {
+                            "ip": ip,
+                            "r_score": r_Score,
+                            "r_Domain": r_Domain,
+                            "r_Reports_Count": r_Reports_Count,
+                            "r_Country_Code": r_Country_Code,
+                            "r_Lastest_Report": r_Lastest_Report
+                            }
+                            return results
+                    gui_output = f"A1 This IP has been reported as malicious!\n"
+                    gui_output += f"IP Address: {ip}\n"
+                    gui_output += f"Score: {r_Score}\n"
+                    gui_output += f"Domain: {r_Domain}\n"
+                    gui_output += f"Reports: {r_Reports_Count}\n"
+                    gui_output += f"Country: {r_Country_Code}\n"
+                    gui_output += f"Lastest Report: {r_Lastest_Report}\n"
+                    return gui_output
                 else:
-                    print(f"\nIP address [bold yellow]{ip}[/bold yellow] has not been reported as malicious with a confidence score of [[bold yellow]{data['data']['abuseConfidenceScore']}[/bold yellow]].\n")              
-        return (ip, str(r_Score), r_Domain, str(r_Reports_Count), r_Country_Code, r_Lastest_Report)
+                    if gui == True:
+                            results = {
+                            "ip": ip,
+                            "r_score": r_Score,
+                            "r_Domain": r_Domain,
+                            "r_Reports_Count": r_Reports_Count,
+                            "r_Country_Code": r_Country_Code,
+                            "r_Lastest_Report": r_Lastest_Report
+                            }
+                            return results
+                    gui_output = f"A2 This IP has not been reported as malicious!\n"
+                    gui_output += f"IP Address: {ip}\n"
+                    gui_output += f"Score: {r_Score}\n"
+                    gui_output += f"Domain: {r_Domain}\n"
+                    gui_output += f"Reports: {r_Reports_Count}\n"
+                    gui_output += f"Country: {r_Country_Code}\n"
+                    gui_output += f"Lastest Report: {r_Lastest_Report}\n"
+                    return gui_output
+            elif details == False or settings_showDetails in ["no", "n", "NO", "N", "false", "False"]:
+                if int(r_Score) >= settings_confidenceScore and int(r_Score) >= 1:
+                    gui_output = f"IP Address: {ip} is malicious with a score of {r_Score}\n"
+                    return gui_output
+                else:
+                    gui_output = f"IP Address: {ip} is not malicious with a score of {r_Score}\n"
+                    return gui_output
     else:
         errors = response.json().get('errors', [])
         error_detail = errors[0].get('detail', 'Errore sconosciuto')
         print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [red]{error_detail}[/red]\n')
 
-
-#optional details
-def check_ips_from_file(filename, output_file, details):
+#Bulk Check
+def bulkcheck(ips, filename, output_file):
     console = Console()
     table = Table(title=f"List of Checked IP from [yellow]{filename}[/yellow]")
     table.add_column("IP Address", justify="left")
@@ -133,27 +168,54 @@ def check_ips_from_file(filename, output_file, details):
     config.read(config_file)
     settings_confidenceScore = config['DEFAULT']['confidenceScore']
     malicious_ips = []
-    try:
-        with open(filename, 'r') as f:
-            ips = f.readlines()
-            progress = Progress(transient=True)
-            task = progress.add_task(f"\nProcessing IPs from [yellow]{filename}[/yellow]", total=len(ips))
-            with progress:
-                for ip in ips:
-                    ip = ip.strip()
-                    result = check_ip(ip, details)
-                    
-                    progress.update(task, advance=1)
-                    if result:
-                        table.add_row(*result)
-                    if int(result[1]) >= int(settings_confidenceScore):
-                        result = (*result, f"https://abuseipdb.com/check/{ip}")
-                        malicious_ips.append(result)
-                progress.stop()
-            console.print(table)
-    except FileNotFoundError:
-        print(f"\nFile [yellow]{filename}[/yellow] not found.\n")
-    
+    if __name__ == '__main__':
+        try:
+            with open(filename, 'r') as f:
+                ips = f.readlines()
+                progress = Progress(transient=True)
+                task = progress.add_task(f"\nProcessing IPs from [yellow]{filename}[/yellow]", total=len(ips))
+                with progress:
+                    for ip in ips:
+                        ip = ip.strip()
+                        result = check_ip(ip, details=True)
+                        
+                        progress.update(task, advance=1)
+                        if result:
+                            table.add_row(*result)
+                        if int(result[1]) >= int(settings_confidenceScore):
+                            result = (*result, f"https://abuseipdb.com/check/{ip}")
+                            malicious_ips.append(result)
+                    progress.stop()
+                console.print(table)
+        except FileNotFoundError:
+            print(f"\nFile [yellow]{filename}[/yellow] not found.\n")
+    else:
+        print("ips: " + ips)
+        if ips:
+            ips = [ip.strip() for ip in ips.splitlines() if ip.strip()]
+            for ip in ips:
+                
+                print(f"Checking IP: {ip}")
+                result = check_ip(ip, details=True, gui=True)
+                if result:
+                    table.add_row(*result)
+                print(f"result {result}")
+                if int(result["r_score"]) >= int(settings_confidenceScore) and int(result["r_score"]) >= 1:
+                    #result = (*result, f"https://abuseipdb.com/check/{ip}")
+                    malicious_ips.append(result)
+            count_ip = len(ips)
+            count_malicious_ip = len(malicious_ips)
+            results = f'''Total IP checked: {count_ip}
+Reported IPs: {count_malicious_ip}
+Here is the list of malicious IPs:\n'''
+            for ip in malicious_ips:
+                results += f"{ip['ip']}\n"
+
+            results += "\nYou can generate a report file by using the output option.\n"
+            return results
+
+
+        
     if output_file:
         if output_file.endswith(".csv"):
             with open(output_file, mode='w', newline='') as file:
@@ -176,6 +238,7 @@ def check_ips_from_file(filename, output_file, details):
     else:
         print("\nNo output file specified.\n")
 
+#Check Subnet
 def check_subnet(subnet, output_file):
     config.read(config_file)
     API_KEY = config['DEFAULT']['API_KEY']
@@ -207,10 +270,17 @@ def check_subnet(subnet, output_file):
             country = record['countryCode']
             lastest_report = record['mostRecentReport']
             table.add_row(ip, str(score), str(reports), country, lastest_report)
+            results = f'''Total IP checked: {len(data['data']['reportedAddress'])}
+Average Score: {avg_r_Score}
+Here is the list of IPs in subnet {subnet}:\n'''
+            for record in data['data']['reportedAddress']:
+                results += f"{record['ipAddress']} with score {record['abuseConfidenceScore']} \n"
+            results += "\nYou can generate a report file by using the output option.\n"
         console = Console()
         console.print(table)
-
+        
         print(f'This subnet [bold yellow]{subnet}[/bold yellow] has a reputation score average of [bold yellow]{avg_r_Score}[/bold yellow]\n')
+        return results
     else:   
         errors = response.json().get('errors', [])
         error_detail = errors[0].get('detail', 'Errore sconosciuto')
@@ -253,7 +323,7 @@ def config_menu():
         if not os.path.exists(config_file):
             print("Config file not found. Creating a new one.")
             config['DEFAULT'] = {
-                'confidenceScore': '50',
+                'confidenceScore': '0',
                 'showDetails': 'False'
             }
             with open(config_file, 'w') as f:
@@ -276,7 +346,7 @@ def config_menu():
                 with open(config_file, 'w') as f:
                     config.write(f)
             elif choice == '2':
-                settings_confidenceScore = input('\nEnter the value for Confidence Score: ')
+                settings_confidenceScore = input('\nEnter the value for Confidence Score (Default: 0): ')
                 config['DEFAULT']['confidenceScore'] = settings_confidenceScore
                 with open(config_file, 'w') as f:
                     config.write(f)
@@ -325,8 +395,6 @@ def main():
         with open(config_file, 'w') as f:
             config.write(f)
  
-    
-    
 #Check if API key is empty
     config.read(config_file)
 
@@ -335,16 +403,34 @@ def main():
         setup_api()
     elif args.help:
         print_help()
+    elif args.gui:
+        abgui.create_gui()
     elif args.ip:
-        check_ip(args.ip, args.details)
+        if args.details:
+            details = True
+            check_ip(args.ip, details)
+        else:
+            details = False
+            check_ip(args.ip, details)
     elif args.subnet:
         check_subnet(args.subnet, args.output_file)
     elif args.ips_file:
-        check_ips_from_file(args.ips_file, args.output_file, args.details)
+        bulkcheck(args.ips_file, args.output_file, args.details)
     elif args.config:
         config_menu()
     else:
         print("\nPlease use -h or --help for show all commands\n")
 
 if __name__ == "__main__":
+    subprocess.Popen(["pythonw", "-c", "from gui import create_gui; create_gui()"], shell=False)
+    parser = argparse.ArgumentParser(description=banner(), add_help=False)
+    parser.add_argument('-help', dest='help',action="store_true", help='Print this help message')
+    parser.add_argument('-gui', dest='gui', action="store_true", help='Open GUI')
+    parser.add_argument('-ip', dest='ip', metavar='IP', help='Check an individual IP address.')
+    parser.add_argument('-file', dest='ips_file', metavar='FILE', help='Check a list of IP addresses from a file (one per line)"')
+    parser.add_argument('-subnet', dest='subnet', metavar='SUBNET', help='Subnet Check')
+    parser.add_argument('-output', dest='output_file', metavar='FILE', help='Write list of malicious IPs with score greater than or equal to Confidence Score')
+    parser.add_argument('-details', dest='details', nargs="?", const='True', help='Print details of IP check. (Score, Domain, Reports, Country, Lastest Report)')
+    parser.add_argument('-config', dest='config', action="store_true", help='Open config menu. (edit API_KEY or Confidence Score)')
+    args = parser.parse_args()
     main()
