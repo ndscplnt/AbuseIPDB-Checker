@@ -73,6 +73,7 @@ def toggle_output(output_label, output_entry):
 def create_gui():
     root = tk.Tk()
     root.title("Malicious IP Checker")
+    root.iconbitmap("icon.ico")
     root.configure(background='#f0f0f0')
 
     operations = ["Check Individual IP", "Bulk Check", "Check Subnet"]
