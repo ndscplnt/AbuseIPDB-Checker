@@ -81,7 +81,6 @@ def check_ip(ip,details, gui):
         table.add_column("Reports", justify="center")
         table.add_column("Country", justify="center")
         table.add_column("Lastest Report", justify="left")
-        print("gui", gui)
         console = Console()
         config.read(config_file)
         settings_confidenceScore = int(config['DEFAULT']['confidenceScore'])
@@ -190,16 +189,13 @@ def bulkcheck(ips, filename, output_file):
         except FileNotFoundError:
             print(f"\nFile [yellow]{filename}[/yellow] not found.\n")
     else:
-        print("ips: " + ips)
         if ips:
             ips = [ip.strip() for ip in ips.splitlines() if ip.strip()]
             for ip in ips:
-                
-                print(f"Checking IP: {ip}")
+        
                 result = check_ip(ip, details=True, gui=True)
                 if result:
                     table.add_row(*result)
-                print(f"result {result}")
                 if int(result["r_score"]) >= int(settings_confidenceScore) and int(result["r_score"]) >= 1:
                     #result = (*result, f"https://abuseipdb.com/check/{ip}")
                     malicious_ips.append(result)
