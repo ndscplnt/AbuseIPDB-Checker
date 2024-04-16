@@ -2,7 +2,14 @@
 ![Logo](https://i.imgur.com/HEgWwcF.png)
 # AbuseIPDB Checker Tool
 
-This is a Python script that uses the AbuseIPDB API to check whether an IP address has been reported as malicious. The user can enter an IP address, a subnet or a list of IP addresses in a file, and the script will check each one and provide a report on its reputation score. The script reads configuration options from a config file and requires the user to input their API key.
+This Python script leverages the AbuseIPDB API to determine whether an IP address has been flagged as malicious. Users can input a single IP address, a subnet, or a list of IP addresses from a file, and the script will perform reputation checks for each entry, providing a detailed report on its reputation score. The script is configurable, allowing users to customize settings via a configuration file.
+
+<p align="center">
+    <img src="https://i.imgur.com/AMjs8gD.png" />
+</p>
+<p align="center">
+    <i>It is capable of functioning both via command-line and graphical interface.</i>
+</p>
 
 ## AbuseIPDB API KEY
 
@@ -23,15 +30,22 @@ You have to install the requirements before use this tool
  pip install -r requirements.txt
 ```
 
-Run the tool with command:
+Run the tool via GUI:
+```bash
+ python abuseipdb.py -gui (or double click abuseipdb.py)
+```
 
+Run the tool via command line:
 ```bash
  python abuseipdb.py
 ```
+
 ## Usage/Examples
 
 ```bash
 python abuseipdb.py -help
+
+python abuseipdb.py -gui
 
 python abuseipdb.py -ip 123.456.789.0 -d
 
@@ -41,9 +55,11 @@ python abuseipdb.py -file path/to/file.txt -o output.xlsx
 
 ## Thanks to
 - [AbuseIPDB](https://www.abuseipdb.com)
+- [tkinker](https://docs.python.org/3/library/tkinter.html)
 - [Termcolor](https://github.com/termcolor/termcolor)
 - [Rich](https://github.com/Textualize/rich)
 - [Pandas](https://github.com/pandas-dev/pandas)
 
 ## License
 MIT © [ndscplnt](https://github.com/ndscplnt/AbuseIPDB-Checker/blob/main/LICENSE.md)
+
