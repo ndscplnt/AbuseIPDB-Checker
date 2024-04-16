@@ -116,7 +116,7 @@ def check_ip(ip,details, gui):
                             "r_Lastest_Report": r_Lastest_Report
                             }
                             return results
-                    gui_output = f"A1 This IP has been reported as malicious!\n"
+                    gui_output = f"This IP has been reported as malicious!\n"
                     gui_output += f"IP Address: {ip}\n"
                     gui_output += f"Score: {r_Score}\n"
                     gui_output += f"Domain: {r_Domain}\n"
@@ -135,7 +135,7 @@ def check_ip(ip,details, gui):
                             "r_Lastest_Report": r_Lastest_Report
                             }
                             return results
-                    gui_output = f"A2 This IP has not been reported as malicious!\n"
+                    gui_output = f"This IP has not been reported as malicious!\n"
                     gui_output += f"IP Address: {ip}\n"
                     gui_output += f"Score: {r_Score}\n"
                     gui_output += f"Domain: {r_Domain}\n"
