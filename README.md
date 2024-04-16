@@ -55,7 +55,7 @@ python abuseipdb.py -file path/to/file.txt -o output.xlsx
 
 ## Thanks to
 - [AbuseIPDB](https://www.abuseipdb.com)
-- [tkinker](https://docs.python.org/3/library/tkinter.html)
+- [Tkinter](https://docs.python.org/3/library/tkinter.html)
 - [Termcolor](https://github.com/termcolor/termcolor)
 - [Rich](https://github.com/Textualize/rich)
 - [Pandas](https://github.com/pandas-dev/pandas)
