@@ -54,17 +54,40 @@ def print_help():
 config_file = 'config.ini'
 config = configparser.ConfigParser()
 
-#Check IPs
-def check_ip(ip,details, gui):
+def report(output_file, malicious_ips):
+    settings_confidenceScore = int(config['DEFAULT']['confidenceScore'])
+    if output_file:
+        if output_file.endswith(".csv"):
+            with open(output_file, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["IP", "Score", "Domain", "Reports", "Country", "Lastest Report", "Link to AbuseIPDB"])
+                for row in malicious_ips:
+                    writer.writerow(row)
+            print(f"\nList of malicious IPs with score greater than or equal to [bold red]{settings_confidenceScore}[/bold red] has been written to [yellow]{output_file}[/yellow].\n")
+            print(f"\nYou can modify the confidence score in the config file [yellow]{config_file}[/yellow] or with command [yellow]-config.[/yellow]\n")
+        elif output_file.endswith((".xlsx", ".xls", "")):
+            if output_file.endswith(""):
+                output_file = f"{output_file}.xlsx"
+            try:
+                df = pd.DataFrame(malicious_ips, columns=["IP", "Score", "Domain", "Reports", "Country", "Lastest Report", "Link to AbuseIPDB"])
+                df.to_excel(output_file, index=False)
+            except FutureWarning: 
+                print("Use xlsx for better results.")
+                pass
+            print(f"\nList of malicious IPs with score greater than or equal to [bold yellow]{settings_confidenceScore}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
+        else:
+            print("\nNo output file specified.\n")
+
+def check_ip(ip, details, gui, bulk):
     config.read(config_file)
     API_KEY = config['DEFAULT']['API_KEY']
-
     url = f"https://api.abuseipdb.com/api/v2/check?ipAddress={ip}&maxAgeInDays=90"
     headers = {
         "Accept": "application/json",
         "Key": API_KEY
     }
     response = requests.get(url, headers=headers)
+    
     if response.status_code == 200:
         data = response.json()
         r_Score = str(data['data']['abuseConfidenceScore'])
@@ -73,89 +96,65 @@ def check_ip(ip,details, gui):
         r_Country_Code = data['data']['countryCode']
         r_Lastest_Report = data['data']['lastReportedAt']
         
-        
-        table = Table(title="List of Checked IP",caption= f"Default confidence score:  [yellow]{config['DEFAULT']['confidenceScore']}[yellow]")
+        console = Console()
+        table = Table(title="List of Checked IP", caption=f"Default confidence score:  [yellow]{config['DEFAULT']['confidenceScore']}[yellow]")
         table.add_column("IP Address", justify="left")
         table.add_column("Score", justify="center")
         table.add_column("Domain", justify="left")
         table.add_column("Reports", justify="center")
         table.add_column("Country", justify="center")
         table.add_column("Lastest Report", justify="left")
-        console = Console()
-        config.read(config_file)
+        
         settings_confidenceScore = int(config['DEFAULT']['confidenceScore'])
         settings_showDetails = bool(config['DEFAULT']['showDetails'])
-        if __name__ == '__main__':
-            if args.ip:
-                if details == True or settings_showDetails in ["yes", "y", "YES", "Y", "true", "True"]:
-                    if int(r_Score) >= settings_confidenceScore and int(r_Score) >= 1:
-                        table.add_row(ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report)
-                        console.print(table)
-                        print("")
-                    else: 
-                        table.add_row(ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report)
-                        table.caption = f"IP address [bold green]{ip}[/bold green] has not been reported as malicious!\n"
-                        console.print(table)
-                        print("")
-                elif details == False or settings_showDetails in ["no", "n", "NO", "N", "false", "False"]:
-                    if int(r_Score) >= settings_confidenceScore:
-                        print(f"\nIP address [bold red]{ip}[/bold red] assigned to domain [bold red]{r_Domain}[/bold red] has been reported as malicious with a confidence score of [[bold red]{data['data']['abuseConfidenceScore']}[/bold red]].\n")
-                    else:
-                        print(f"\nIP address [bold green]{ip}[/bold green] assigned to domain [bold green]{r_Domain}[/bold green] has not been reported as malicious with a confidence score of [[bold green]{data['data']['abuseConfidenceScore']}[/bold green]].\n")                            
+        
+        if gui:
+            if details and bulk == False:
+                gui_output = f"This IP has been reported as malicious!\n"
+                gui_output += f"IP Address: {ip}\n"
+                gui_output += f"Score: {r_Score}\n"
+                gui_output += f"Domain: {r_Domain}\n"
+                gui_output += f"Reports: {r_Reports_Count}\n"
+                gui_output += f"Country: {r_Country_Code}\n"
+                gui_output += f"Lastest Report: {r_Lastest_Report}\n"
+                return gui_output
+            else:            
+                results = {
+                    "ip": ip,
+                    "r_Score": r_Score,
+                    "r_Domain": r_Domain,
+                    "r_Reports_Count": r_Reports_Count,
+                    "r_Country_Code": r_Country_Code,
+                    "r_Lastest_Report": r_Lastest_Report
+                }
+                return results
         else:
-            if details == True or settings_showDetails in ["yes", "y", "YES", "Y", "true", "True"]:
+            if details:
                 if int(r_Score) >= settings_confidenceScore and int(r_Score) >= 1:
-                    if gui == True:
-                            results = {
-                            "ip": ip,
-                            "r_score": r_Score,
-                            "r_Domain": r_Domain,
-                            "r_Reports_Count": r_Reports_Count,
-                            "r_Country_Code": r_Country_Code,
-                            "r_Lastest_Report": r_Lastest_Report
-                            }
-                            return results
-                    gui_output = f"This IP has been reported as malicious!\n"
-                    gui_output += f"IP Address: {ip}\n"
-                    gui_output += f"Score: {r_Score}\n"
-                    gui_output += f"Domain: {r_Domain}\n"
-                    gui_output += f"Reports: {r_Reports_Count}\n"
-                    gui_output += f"Country: {r_Country_Code}\n"
-                    gui_output += f"Lastest Report: {r_Lastest_Report}\n"
-                    return gui_output
+                    if bulk == True:
+                        return ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report
+                    table.add_row(ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report)
+                    console.print(table)
+                    print("")
                 else:
-                    if gui == True:
-                            results = {
-                            "ip": ip,
-                            "r_score": r_Score,
-                            "r_Domain": r_Domain,
-                            "r_Reports_Count": r_Reports_Count,
-                            "r_Country_Code": r_Country_Code,
-                            "r_Lastest_Report": r_Lastest_Report
-                            }
-                            return results
-                    gui_output = f"This IP has not been reported as malicious!\n"
-                    gui_output += f"IP Address: {ip}\n"
-                    gui_output += f"Score: {r_Score}\n"
-                    gui_output += f"Domain: {r_Domain}\n"
-                    gui_output += f"Reports: {r_Reports_Count}\n"
-                    gui_output += f"Country: {r_Country_Code}\n"
-                    gui_output += f"Lastest Report: {r_Lastest_Report}\n"
-                    return gui_output
-            elif details == False or settings_showDetails in ["no", "n", "NO", "N", "false", "False"]:
-                if int(r_Score) >= settings_confidenceScore and int(r_Score) >= 1:
-                    gui_output = f"IP Address: {ip} is malicious with a score of {r_Score}\n"
-                    return gui_output
+                    if bulk == True:
+                        return ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report
+                    table.add_row(ip, r_Score, r_Domain, r_Reports_Count, r_Country_Code, r_Lastest_Report)
+                    table.caption = f"IP address [bold green]{ip}[/bold green] has not been reported as malicious!\n"
+                    console.print(table)
+                    print("")
+            else:
+                if int(r_Score) >= settings_confidenceScore:
+                    print(f"\nIP address [bold red]{ip}[/bold red] assigned to domain [bold red]{r_Domain}[/bold red] has been reported as malicious with a confidence score of [[bold red]{data['data']['abuseConfidenceScore']}[/bold red]].\n")
                 else:
-                    gui_output = f"IP Address: {ip} is not malicious with a score of {r_Score}\n"
-                    return gui_output
+                    print(f"\nIP address [bold green]{ip}[/bold green] assigned to domain [bold green]{r_Domain}[/bold green] has not been reported as malicious with a confidence score of [[bold green]{data['data']['abuseConfidenceScore']}[/bold green]].\n")    
     else:
         errors = response.json().get('errors', [])
-        error_detail = errors[0].get('detail', 'Errore sconosciuto')
+        error_detail = errors[0].get('detail', 'Unknown error')
         print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [red]{error_detail}[/red]\n')
 
-#Bulk Check
-def bulkcheck(ips, filename, output_file):
+
+def bulkcheck(ips, filename, output_file, gui=False):
     console = Console()
     table = Table(title=f"List of Checked IP from [yellow]{filename}[/yellow]")
     table.add_column("IP Address", justify="left")
@@ -163,11 +162,13 @@ def bulkcheck(ips, filename, output_file):
     table.add_column("Domain", justify="left")
     table.add_column("Reports", justify="center")
     table.add_column("Country", justify="center")
-    table.add_column("Lastest Report", justify="left")
+    table.add_column("Latest Report", justify="left")
+    
     config.read(config_file)
-    settings_confidenceScore = config['DEFAULT']['confidenceScore']
+    settings_confidenceScore = int(config['DEFAULT']['confidenceScore'])
     malicious_ips = []
-    if __name__ == '__main__':
+    
+    if gui == False:
         try:
             with open(filename, 'r') as f:
                 ips = f.readlines()
@@ -176,63 +177,87 @@ def bulkcheck(ips, filename, output_file):
                 with progress:
                     for ip in ips:
                         ip = ip.strip()
-                        result = check_ip(ip, details=True)
-                        
-                        progress.update(task, advance=1)
+                        result = check_ip(ip, details=True, gui=False, bulk=True)
                         if result:
                             table.add_row(*result)
-                        if int(result[1]) >= int(settings_confidenceScore):
+                        if int(result[1]) >= settings_confidenceScore and int(result[1]) >= 1:
                             result = (*result, f"https://abuseipdb.com/check/{ip}")
                             malicious_ips.append(result)
-                    progress.stop()
-                console.print(table)
+                        progress.update(task, advance=1)
+                progress.stop()
+            console.print(table)
+            if output_file:
+                if output_file.endswith(".csv"):
+                    with open(output_file, mode='w', newline='') as file:
+                        writer = csv.writer(file)
+                        writer.writerow(["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
+                        for row in malicious_ips:
+                            writer.writerow(row)
+                    print(f"\nList of malicious IPs with score greater than or equal to [bold red]{settings_confidenceScore}[/bold red] has been written to [yellow]{output_file}[/yellow].\n")
+                    print(f"\nYou can modify the confidence score in the config file [yellow]{config_file}[/yellow] or with command [yellow]-config.[/yellow]\n")
+                else:
+                    if not output_file.endswith(".xlsx"):
+                        output_file += ".xlsx"
+                    try:
+                        df = pd.DataFrame(malicious_ips, columns=["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
+                        df.to_excel(output_file, index=False)
+                    except FutureWarning: 
+                        print("Use xlsx for better results.")
+                        pass
+                    print(f"\nList of malicious IPs with score greater than or equal to [bold yellow]{settings_confidenceScore}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
         except FileNotFoundError:
-            print(f"\nFile [yellow]{filename}[/yellow] not found.\n")
+            print(f"\nIPs list file [yellow]{filename}[/yellow] not found.\n")
     else:
+        results = []  # Inizializza results come lista vuota
         if ips:
             ips = [ip.strip() for ip in ips.splitlines() if ip.strip()]
             for ip in ips:
-        
-                result = check_ip(ip, details=True, gui=True)
+                result = check_ip(ip, details=True, gui=True, bulk=True)
                 if result:
                     table.add_row(*result)
-                if int(result["r_score"]) >= int(settings_confidenceScore) and int(result["r_score"]) >= 1:
-                    #result = (*result, f"https://abuseipdb.com/check/{ip}")
-                    malicious_ips.append(result)
+                    r_Score = int(result['r_Score'])
+                    results.append(result)
+                    if r_Score >= 1:
+                        malicious_ips.append(result)  # Aggiungi il risultato alla lista results
+            
             count_ip = len(ips)
             count_malicious_ip = len(malicious_ips)
-            results = f'''Total IP checked: {count_ip}
-Reported IPs: {count_malicious_ip}
-Here is the list of malicious IPs:\n'''
-            for ip in malicious_ips:
-                results += f"{ip['ip']}\n"
+            output_results = f'''Total IP checked: {count_ip}
+    Reported IPs: {count_malicious_ip}
+    Here is the list of malicious IPs:\n'''
+            for row in malicious_ips:
+                output_results += f"{row['ip']}\n"
+            if output_file:
+                if output_file.endswith(".csv"):
+                    # Codice per salvare in formato CSV
+                    with open(output_file, mode='w', newline='') as file:
+                        writer = csv.writer(file)
+                        writer.writerow(["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
+                        for row in results:  # Itera su tutti i risultati, non solo sull'ultimo
+                            if int(row['r_Score']) >= settings_confidenceScore:
+                                writer.writerow(row.values())
+                    output_results += f"\nList of malicious IPs with score greater than or equal to {settings_confidenceScore} has been written to {output_file}\n"
+                    output_results += f"You can modify the confidence score in the config file {config_file} or with command -config.\n"
+                else:
+                    if not output_file.endswith(".xlsx"):
+                        output_file += ".xlsx"
+                    try:
+                        excelresults = []
+                        for row in results:
+                            if int(row['r_Score']) >= settings_confidenceScore:
+                                excelresults.append([row['ip'], row['r_Score'], row['r_Domain'], row['r_Reports_Count'], row['r_Country_Code'], row['r_Lastest_Report'], f"https://abuseipdb.com/check/{row['ip']}"])
+                        df = pd.DataFrame(excelresults, columns=["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
+                        df.to_excel(output_file, index=False)
+                        output_results += f"\nList of malicious IPs with score greater than or equal to {settings_confidenceScore} has been written to {output_file}\n"
+                        output_results += f"\nYou can modify the confidence score in the config file {config_file} or with command -config.\n"
+                    except FutureWarning: 
+                        print("Use xlsx for better results.")
+                        pass
+            else:
+                output_results += "\nYou can generate a report file by using the output option.\n"
+            return output_results
 
-            results += "\nYou can generate a report file by using the output option.\n"
-            return results
 
-
-        
-    if output_file:
-        if output_file.endswith(".csv"):
-            with open(output_file, mode='w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(["IP", "Score","Domain","Reports","Country","Lastest Report","Link to AbuseIPDB"])
-                for row in malicious_ips:
-                    writer.writerow(row)
-            print(f"\nList of malicious IPs with score greater than or equal to [bold red]{settings_confidenceScore}[/bold red] has been written to [yellow]{output_file}[/yellow].\n")
-            print(f"\nYou can modify the confidence score in the config file [yellow]{config_file}[/yellow] or with command [yellow]-config.[/yellow]\n")
-        elif output_file.endswith(".xlsx") or output_file.endswith(".xls") or output_file.endswith(""):
-            if output_file.endswith(""):
-                output_file = f"{output_file}.xlsx"
-            try:
-                df = pd.DataFrame(malicious_ips, columns=["IP", "Score","Domain","Reports","Country","Lastest Report","Link to AbuseIPDB"])
-                df.to_excel(output_file, index=False)
-            except FutureWarning: 
-                print("Use xlsx for better results.")
-                pass
-            print(f"\nList of malicious IPs with score greater than or equal to [bold yellow]{settings_confidenceScore}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
-    else:
-        print("\nNo output file specified.\n")
 
 #Check Subnet
 def check_subnet(subnet, output_file):
@@ -411,14 +436,14 @@ def main():
     elif args.subnet:
         check_subnet(args.subnet, args.output_file)
     elif args.ips_file:
-        bulkcheck(args.ips_file, args.output_file, args.details)
+        bulkcheck(args.ips_file, filename=args.ips_file, output_file=args.output_file, gui=False)
     elif args.config:
         config_menu()
     else:
         print("\nPlease use -h or --help for show all commands\n")
 
 if __name__ == "__main__":
-    subprocess.Popen(["pythonw", "-c", "from gui import create_gui; create_gui()"], shell=False)
+    #subprocess.Popen(["pythonw", "-c", "from gui import create_gui; create_gui()"], shell=False)
     parser = argparse.ArgumentParser(description=banner(), add_help=False)
     parser.add_argument('-help', dest='help',action="store_true", help='Print this help message')
     parser.add_argument('-gui', dest='gui', action="store_true", help='Open GUI')

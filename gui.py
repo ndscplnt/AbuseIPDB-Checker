@@ -24,6 +24,7 @@ def run_tool(operation_var, ip_entry, ips_entry, subnet_entry, output_entry, det
     ip = ip_entry.get()
     ips = ips_entry.get("1.0", tk.END).strip() # get ip addresses from text widget
     subnet = subnet_entry.get()
+    file_entry = file_entry.get()
     output_file = output_entry.get()
     details = details_var.get()
 
@@ -41,7 +42,7 @@ def run_tool(operation_var, ip_entry, ips_entry, subnet_entry, output_entry, det
             messagebox.showerror("Error", "Please provide an IP address.")
     elif operation == "Bulk Check":
         if ips:
-            output_text.insert(tk.END, ab.bulkcheck(ips, output_file, details))
+            output_text.insert(tk.END, ab.bulkcheck(ips, file_entry, output_file, gui=True))
         else:
             messagebox.showerror("Error", "Please provide a list of IP addresses.")
     elif operation == "Check Subnet":
@@ -93,7 +94,7 @@ def create_gui():
     file_button = tk.Button(root, text="Browse", command=partial(browse_file, file_entry, ips_entry))
     subnet_label = tk.Label(root, text="Subnet:", background='#f0f0f0')
     subnet_entry = tk.Entry(root)
-    output_label = tk.Label(root, text="Output File:", background='#f0f0f0', state=tk.DISABLED)
+    output_label = tk.Label(root, text="Output File Name (.csv .xlsx):", background='#f0f0f0', state=tk.DISABLED)
     output_entry = tk.Entry(root)
     details_var = tk.BooleanVar()
     details_check = tk.Checkbutton(root, text="Show Details", variable=details_var, background='#f0f0f0')
@@ -120,6 +121,8 @@ def create_gui():
             ip_entry.grid_forget()
             subnet_label.grid_forget()
             subnet_entry.grid_forget()
+            details_check.grid_forget()
+
         elif operation == "Check Subnet":
             subnet_label.grid(row=1, column=0, pady=5, padx=5)
             subnet_entry.grid(row=1, column=1, pady=5, padx=5)
@@ -130,6 +133,7 @@ def create_gui():
             file_label.grid_forget()
             file_entry.grid_forget()
             file_button.grid_forget()
+            details_check.grid_forget()
 
     operation_var.set("Check Individual IP")    
     ip_label.grid(row=1, column=0, pady=5, padx=5)  
