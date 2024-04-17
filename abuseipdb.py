@@ -78,7 +78,7 @@ def report(output_file, malicious_ips):
         else:
             print("\nNo output file specified.\n")
 
-def check_ip(ip, details, gui, bulk):
+def check_ip(ip, details, gui=False, bulk=False):
     config.read(config_file)
     API_KEY = config['DEFAULT']['API_KEY']
     url = f"https://api.abuseipdb.com/api/v2/check?ipAddress={ip}&maxAgeInDays=90"
@@ -151,7 +151,9 @@ def check_ip(ip, details, gui, bulk):
     else:
         errors = response.json().get('errors', [])
         error_detail = errors[0].get('detail', 'Unknown error')
+        output_results = f'\nError checking IP {ip}: {error_detail}\n'
         print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [red]{error_detail}[/red]\n')
+        return output_results
 
 
 def bulkcheck(ips, filename, output_file, gui=False):
@@ -208,7 +210,7 @@ def bulkcheck(ips, filename, output_file, gui=False):
         except FileNotFoundError:
             print(f"\nIPs list file [yellow]{filename}[/yellow] not found.\n")
     else:
-        results = []  # Inizializza results come lista vuota
+        results = []  
         if ips:
             ips = [ip.strip() for ip in ips.splitlines() if ip.strip()]
             for ip in ips:
@@ -218,8 +220,7 @@ def bulkcheck(ips, filename, output_file, gui=False):
                     r_Score = int(result['r_Score'])
                     results.append(result)
                     if r_Score >= 1:
-                        malicious_ips.append(result)  # Aggiungi il risultato alla lista results
-            
+                        malicious_ips.append(result)
             count_ip = len(ips)
             count_malicious_ip = len(malicious_ips)
             output_results = f'''Total IP checked: {count_ip}
@@ -229,11 +230,10 @@ def bulkcheck(ips, filename, output_file, gui=False):
                 output_results += f"{row['ip']}\n"
             if output_file:
                 if output_file.endswith(".csv"):
-                    # Codice per salvare in formato CSV
                     with open(output_file, mode='w', newline='') as file:
                         writer = csv.writer(file)
                         writer.writerow(["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
-                        for row in results:  # Itera su tutti i risultati, non solo sull'ultimo
+                        for row in results:  
                             if int(row['r_Score']) >= settings_confidenceScore:
                                 writer.writerow(row.values())
                     output_results += f"\nList of malicious IPs with score greater than or equal to {settings_confidenceScore} has been written to {output_file}\n"
@@ -256,9 +256,7 @@ def bulkcheck(ips, filename, output_file, gui=False):
             else:
                 output_results += "\nYou can generate a report file by using the output option.\n"
             return output_results
-
-
-
+        
 #Check Subnet
 def check_subnet(subnet, output_file):
     config.read(config_file)
@@ -267,75 +265,80 @@ def check_subnet(subnet, output_file):
     headers = {
         'Accept': 'application/json',
         'Key': API_KEY
-        }
+    }
     response = requests.get(f'https://api.abuseipdb.com/api/v2/check-block?network={subnet}', headers=headers)
 
     if response.status_code == 200:
         data = response.json()
+        results = [] 
+        malicious_ips = [] 
         for record in data['data']['reportedAddress']: 
-            r_Score = record['abuseConfidenceScore']
-            r_Score += r_Score
-            r_Score = r_Score / len(data['data']['reportedAddress'])
-            avg_r_Score = round(r_Score, 2)
+            results.append({
+                "IP": record['ipAddress'],
+                "Score": record['abuseConfidenceScore'],
+                "Reports": record['numReports'],
+                "Country": record['countryCode'],
+                "Lastest Report": record['mostRecentReport'],
+                "Link": f"https://abuseipdb.com/check/{record['ipAddress']}"
+            })
+            if record['abuseConfidenceScore'] >= settings_confidenceScore:
+                malicious_ips.append(record['ipAddress'])
+
+        scores = [record['abuseConfidenceScore'] for record in data['data']['reportedAddress']]
+        avg_r_Score = round(sum(scores) / len(scores), 2) if scores else 0
 
         table = Table(title=f"List of Checked Subnet's IP ([yellow]{subnet}[/yellow])")
         table.add_column("IP Address", justify="left")
         table.add_column("Score", justify="center")
         table.add_column("Reports", justify="center")
         table.add_column("Country", justify="center")
-        table.add_column("Lastest Report", justify="left")
-        for record in data['data']['reportedAddress']:
-            ip = record['ipAddress']
-            score = record['abuseConfidenceScore']
-            reports = record['numReports']
-            country = record['countryCode']
-            lastest_report = record['mostRecentReport']
-            table.add_row(ip, str(score), str(reports), country, lastest_report)
-            results = f'''Total IP checked: {len(data['data']['reportedAddress'])}
-Average Score: {avg_r_Score}
-Here is the list of IPs in subnet {subnet}:\n'''
-            for record in data['data']['reportedAddress']:
-                results += f"{record['ipAddress']} with score {record['abuseConfidenceScore']} \n"
-            results += "\nYou can generate a report file by using the output option.\n"
+        table.add_column("Latest Report", justify="left")
+        for record in results:
+            table.add_row(record['IP'], str(record['Score']), str(record['Reports']), record['Country'], record['Lastest Report'])
         console = Console()
         console.print(table)
-        
         print(f'This subnet [bold yellow]{subnet}[/bold yellow] has a reputation score average of [bold yellow]{avg_r_Score}[/bold yellow]\n')
-        return results
+
+        output_results = f'''Total IP checked: {len(data['data']['reportedAddress'])}
+Average Score: {avg_r_Score}
+Here is the list of malicious IPs:\n'''
+        for ip in malicious_ips:
+            output_results += f"{ip}\n"
+        if output_file:
+            if output_file.endswith(".csv"):
+                with open(output_file, mode='w', newline='') as file:
+                    writer = csv.DictWriter(file, fieldnames=["IP", "Score", "Reports", "Country", "Lastest Report", "Link"])
+                    writer.writeheader()
+                    for record in results:
+                        if record['Score'] >= settings_confidenceScore:
+                            writer.writerow(record)
+                print(f"\nList of IPs in subnet [bold yellow]{subnet}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
+                output_results += f"\nList of IPs in subnet {subnet} has been written to {output_file}.\n"
+            else:
+                if not output_file.endswith(".xlsx"):
+                    output_file += ".xlsx"
+                try:
+                    excelresults = []
+                    for row in results:
+                        if row['Score'] >= settings_confidenceScore:
+                            excelresults.append([row['IP'], row['Score'], row['Reports'], row['Country'], row['Lastest Report'], f"https://abuseipdb.com/check/{row['IP']}"])
+                    df = pd.DataFrame(excelresults, columns=["IP", "Score", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
+                    df.to_excel(output_file, index=False)
+                    print(f"\nList of IPs in subnet [bold yellow]{subnet}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
+                    output_results += f"\nList of IPs in subnet {subnet} has been written to {output_file}.\n"
+                except FutureWarning: 
+                    print("Use xlsx for better results.")
+                    pass
     else:   
         errors = response.json().get('errors', [])
-        error_detail = errors[0].get('detail', 'Errore sconosciuto')
-        print(f'\nError checking IP Address [bold yellow]{ip}[/bold yellow]: [red]{error_detail}[/red]\n')
-    if output_file:
-        output_list = []
-        for record in data['data']['reportedAddress']:
-            ip = record['ipAddress']
-            score = record['abuseConfidenceScore']
-            reports = record['numReports']
-            country = record['countryCode']
-            lastest_report = record['mostRecentReport']
-            output_list.append([ip, score, reports, country, lastest_report, f"https://abuseipdb.com/check/{ip}"])
-        if output_file.endswith(".csv"):
-            with open(output_file, mode='w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(["IP", "Score","Reports","Country Code","Last Report","Link to AbuseIPDB"])
-                writer.writerow(output_list)
-            print(f"\nList of IPs in subnet [bold yellow]{subnet}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
-        elif output_file.endswith(".xlsx") or output_file.endswith(".xls"):
-            try:
-                df = pd.DataFrame(output_list, columns=["IP", "Score","Reports","Country Code","Last Report","Link"])
-                df.to_excel(output_file, index=False) 
-            except FutureWarning: 
-                print("Use xlsx for better results.")
-                pass
-            print(f"\nList of IPs in subnet [bold yellow]{subnet}[/bold yellow] has been written to [yellow]{output_file}[/yellow].\n")
-        else:
-            print("\nInvalid output file format.\n")
-    else:
-        print("\nNo output file specified.\n")
+        error_detail = errors[0].get('detail', 'Unknown Error')
+        output_results = f'\nError checking subnet {subnet}: {error_detail}\n'
+        print(f'\nError checking subnet [bold yellow]{subnet}[/bold yellow]: [red]{error_detail}[/red]\n')
+    return output_results
 
-#END CHECK
 
+#END CHECKS
+ 
 config_file = 'config.ini'
 config = configparser.ConfigParser()
 
@@ -443,7 +446,6 @@ def main():
         print("\nPlease use -h or --help for show all commands\n")
 
 if __name__ == "__main__":
-    #subprocess.Popen(["pythonw", "-c", "from gui import create_gui; create_gui()"], shell=False)
     parser = argparse.ArgumentParser(description=banner(), add_help=False)
     parser.add_argument('-help', dest='help',action="store_true", help='Print this help message')
     parser.add_argument('-gui', dest='gui', action="store_true", help='Open GUI')
@@ -454,4 +456,7 @@ if __name__ == "__main__":
     parser.add_argument('-details', dest='details', nargs="?", const='True', help='Print details of IP check. (Score, Domain, Reports, Country, Lastest Report)')
     parser.add_argument('-config', dest='config', action="store_true", help='Open config menu. (edit API_KEY or Confidence Score)')
     args = parser.parse_args()
-    main()
+    if not args.gui: 
+        main()  
+    else:
+        subprocess.Popen(["pythonw", "-c", "from gui import create_gui; create_gui()"], shell=False)

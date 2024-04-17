@@ -1,4 +1,3 @@
-
 ![Logo](https://i.imgur.com/HEgWwcF.png)
 # AbuseIPDB Checker Tool
 
@@ -32,7 +31,7 @@ You have to install the requirements before use this tool
 
 Run the tool via GUI:
 ```bash
- python abuseipdb.py -gui (or double click abuseipdb.py)
+ python abuseipdb.py -gui
 ```
 
 Run the tool via command line:
@@ -62,4 +61,3 @@ python abuseipdb.py -file path/to/file.txt -o output.xlsx
 
 ## License
 MIT © [ndscplnt](https://github.com/ndscplnt/AbuseIPDB-Checker/blob/main/LICENSE.md)
-
