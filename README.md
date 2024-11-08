@@ -1,3 +1,4 @@
+
 ![Logo](https://i.imgur.com/HEgWwcF.png)
 # AbuseIPDB Checker Tool
 
@@ -60,4 +61,4 @@ python abuseipdb.py -file path/to/file.txt -o output.xlsx
 - [Pandas](https://github.com/pandas-dev/pandas)
 
 ## License
-MIT © [ndscplnt](https://github.com/ndscplnt/AbuseIPDB-Checker/blob/main/LICENSE.md)
+MIT © [ndscplnt](https://github.com/ndscplnt/AbuseIPDB-Checker/blob/main/LICENSE)

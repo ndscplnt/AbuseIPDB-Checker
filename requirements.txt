@@ -2,3 +2,4 @@ pandas
 requests
 rich
 termcolor
+openpyxl
