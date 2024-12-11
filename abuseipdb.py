@@ -211,51 +211,51 @@ def bulkcheck(ips, filename, output_file, gui=False):
             print(f"\nIPs list file [yellow]{filename}[/yellow] not found.\n")
     else:
         results = []  
-        if ips:
+        if isinstance(ips, str):
             ips = [ip.strip() for ip in ips.splitlines() if ip.strip()]
-            for ip in ips:
-                result = check_ip(ip, details=True, gui=True, bulk=True)
-                if result:
-                    table.add_row(*result)
-                    r_Score = int(result['r_Score'])
-                    results.append(result)
-                    if r_Score >= 1:
-                        malicious_ips.append(result)
-            count_ip = len(ips)
-            count_malicious_ip = len(malicious_ips)
-            output_results = f'''Total IP checked: {count_ip}
-    Reported IPs: {count_malicious_ip}
-    Here is the list of malicious IPs:\n'''
-            for row in malicious_ips:
-                output_results += f"{row['ip']}\n"
-            if output_file:
-                if output_file.endswith(".csv"):
-                    with open(output_file, mode='w', newline='') as file:
-                        writer = csv.writer(file)
-                        writer.writerow(["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
-                        for row in results:  
-                            if int(row['r_Score']) >= settings_confidenceScore:
-                                writer.writerow(row.values())
-                    output_results += f"\nList of malicious IPs with score greater than or equal to {settings_confidenceScore} has been written to {output_file}\n"
-                    output_results += f"You can modify the confidence score in the config file {config_file} or with command -config.\n"
-                else:
-                    if not output_file.endswith(".xlsx"):
-                        output_file += ".xlsx"
-                    try:
-                        excelresults = []
-                        for row in results:
-                            if int(row['r_Score']) >= settings_confidenceScore:
-                                excelresults.append([row['ip'], row['r_Score'], row['r_Domain'], row['r_Reports_Count'], row['r_Country_Code'], row['r_Lastest_Report'], f"https://abuseipdb.com/check/{row['ip']}"])
-                        df = pd.DataFrame(excelresults, columns=["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
-                        df.to_excel(output_file, index=False)
-                        output_results += f"\nList of malicious IPs with score greater than or equal to {settings_confidenceScore} has been written to {output_file}\n"
-                        output_results += f"\nYou can modify the confidence score in the config file {config_file} or with command -config.\n"
-                    except FutureWarning: 
-                        print("Use xlsx for better results.")
-                        pass
+        for ip in ips:
+            result = check_ip(ip, details=True, gui=True, bulk=True)
+            if result:
+                table.add_row(*result)
+                r_Score = int(result['r_Score'])
+                results.append(result)
+                if r_Score >= 1:
+                    malicious_ips.append(result)
+        count_ip = len(ips)
+        count_malicious_ip = len(malicious_ips)
+        output_results = f'''Total IP checked: {count_ip}
+Reported IPs: {count_malicious_ip}
+Here is the list of malicious IPs:\n'''
+        for row in malicious_ips:
+            output_results += f"{row['ip']}\n"
+        if output_file:
+            if output_file.endswith(".csv"):
+                with open(output_file, mode='w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
+                    for row in results:  
+                        if int(row['r_Score']) >= settings_confidenceScore:
+                            writer.writerow(row.values())
+                output_results += f"\nList of malicious IPs with score greater than or equal to {settings_confidenceScore} has been written to {output_file}\n"
+                output_results += f"You can modify the confidence score in the config file {config_file} or with command -config.\n"
             else:
-                output_results += "\nYou can generate a report file by using the output option.\n"
-            return output_results
+                if not output_file.endswith(".xlsx"):
+                    output_file += ".xlsx"
+                try:
+                    excelresults = []
+                    for row in results:
+                        if int(row['r_Score']) >= settings_confidenceScore:
+                            excelresults.append([row['ip'], row['r_Score'], row['r_Domain'], row['r_Reports_Count'], row['r_Country_Code'], row['r_Lastest_Report'], f"https://abuseipdb.com/check/{row['ip']}"])
+                    df = pd.DataFrame(excelresults, columns=["IP", "Score", "Domain", "Reports", "Country", "Latest Report", "Link to AbuseIPDB"])
+                    df.to_excel(output_file, index=False)
+                    output_results += f"\nList of malicious IPs with score greater than or equal to {settings_confidenceScore} has been written to {output_file}\n"
+                    output_results += f"\nYou can modify the confidence score in the config file {config_file} or with command -config.\n"
+                except FutureWarning: 
+                    print("Use xlsx for better results.")
+                    pass
+        else:
+            output_results += "\nYou can generate a report file by using the output option.\n"
+        return output_results
         
 #Check Subnet
 def check_subnet(subnet, output_file):
