@@ -418,10 +418,8 @@ def main():
         }
         with open(config_file, 'w') as f:
             config.write(f)
- 
-#Check if API key is empty
+    
     config.read(config_file)
-
     if not config.has_option('DEFAULT', 'API_KEY'):
         print("API Key is empty. Please enter your API key.")
         setup_api()

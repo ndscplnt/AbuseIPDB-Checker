@@ -295,8 +295,11 @@ class MainWindow(QWidget):
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
 
-if __name__ == '__main__':
+def create_gui():
     app = QApplication(sys.argv)
     mainWin = MainWindow()
     mainWin.show()
     sys.exit(app.exec())
+
+if __name__ == '__main__':
+    create_gui()
