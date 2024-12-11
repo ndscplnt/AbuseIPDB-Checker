@@ -5,7 +5,7 @@
 This Python script leverages the AbuseIPDB API to determine whether an IP address has been flagged as malicious. Users can input a single IP address, a subnet, or a list of IP addresses from a file, and the script will perform reputation checks for each entry, providing a detailed report on its reputation score. The script is configurable, allowing users to customize settings via a configuration file.
 
 <p align="center">
-    <img src="https://imgur.com/a/ZbK0Iay" />
+    <img src="https://i.imgur.com/vo5EuCP.png" />
 </p>
 <p align="center">
     <i>It is capable of functioning both via command-line and graphical interface.</i>
