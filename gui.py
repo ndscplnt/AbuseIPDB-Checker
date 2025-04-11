@@ -95,7 +95,7 @@ class MainWindow(QWidget):
         self.setPalette(palette)
         
         self.setWindowTitle('AbuseIPDB Checker')
-        self.setGeometry(300, 300, 500, 700)
+        self.setGeometry(300, 300, 500, 400)
          
         logo_label = QLabel(self)
         logo_pixmap = QPixmap('icon/abuseipdb.png') 
@@ -233,7 +233,7 @@ class MainWindow(QWidget):
         if 'api_key' not in config['DEFAULT'] or config['DEFAULT']['api_key'] == '':
             input_dialog = QInputDialog(self)
             input_dialog.setWindowTitle("Insert Key")
-            input_dialog.setLabelText("KEY not found. Please enter the KEY:")
+            input_dialog.setLabelText("API KEY not found. Please enter the API KEY:")
             input_dialog.setWindowIcon(QIcon("icon/icon.ico")) 
             input_dialog.setStyleSheet("""
                 QInputDialog {

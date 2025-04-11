@@ -12,7 +12,6 @@ from rich.progress import Progress
 from rich import print
 import gui as abgui
 
-
 def banner():
     console = Console(style="bold")
     console.print("\n")
@@ -49,7 +48,6 @@ def print_help():
     python abuseipdb.py -file /path/to/file.txt
     python abuseipdb.py -config
     \n""")
-
 
 config_file = 'config.ini'
 config = configparser.ConfigParser()
